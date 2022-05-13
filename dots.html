@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+	<title>Dots</title>
+	<style>
+		* {
+			box-sizing: border-box;
+		}
+
+		html,
+		body {
+			width: 100%;
+			height: 100%;
+			margin: 0rem !important;
+		}
+
+		html {
+			background-color: rgba(0, 0, 0, 0.05);
+		}
+
+		body {
+			background: linear-gradient(-45deg, rgba(0, 0, 255, 0.05), rgba(0, 255, 0, 0.05));
+		}
+
+		#mid-blocker {
+			position: absolute;
+			top: 50%;
+			left: 50%;
+			width: 35rem;
+			height: 35rem;
+			transform: translate(-50%, -50%);
+			background-color: white;
+			border: solid 2px black;
+			box-shadow: 13px 8px 12px 1px rgba(34, 36, 40, 0.2) inset;
+		}
+
+		#canvas-container,
+		#canvas-container-back {
+			position: absolute;
+			top: 50%;
+			left: 50%;
+			transform: translate(-50%, -50%);
+			border: solid 2px black;
+			background-color: white;
+			transition: background-color 5s linear;
+			box-shadow: 13px 8px 12px 1px rgba(34, 36, 40, 0.2);
+		}
+
+		#canvas-container {
+			width: 30rem;
+			height: 30rem;
+		}
+
+		#canvas-container-back {
+			width: 50rem;
+			height: 50rem;
+		}
+
+		#main-canvas,
+		#main-canvas-back {
+			width: 100%;
+			height: 100%;
+		}
+
+		#main-canvas-back {
+			filter: blur(3px);
+		}
+	</style>
+</head>
+
+<body>
+	<div id="canvas-container-back">
+		<canvas id="main-canvas-back" width="500" height="500"></canvas>
+	</div>
+	<div id="mid-blocker"></div>
+	<div id="canvas-container">
+		<canvas id="main-canvas" width="500" height="500"></canvas>
+	</div>
+
+	<script type="text/javascript">
+		const circleSize = 50;
+		const dotSize = 45;
+		const columns = 19;
+		const rows = 19;
+		const spacing = 0.6;
+		const rotateSpeed = 4
+		const rotateDirection = -1
+		const fold = Math.PI * 1.5
+		const circleTransparency = 0.15
+		const colorRotateTime = 10
+
+		var startTime = new Date()
+		var lastTime = new Date()
+
+		let filterColors = ['white', 'aqua', 'springgreen', 'cyan', 'darkseagreen', 'lightgreen',
+			'darkorange', 'orange', 'yellow', 'salmon', 'violet', 'thistle']
+		let activeColor = filterColors[0]
+		let rotateColors = () => {
+			let i = filterColors.indexOf(activeColor);
+			if (++i >= filterColors.length) {
+				i = 0;
+			}
+			activeColor = filterColors[i]
+
+			document.getElementById('canvas-container').style.backgroundColor = activeColor
+			document.getElementById('canvas-container-back').style.backgroundColor = activeColor
+		}
+
+		let circles = []
+
+		let createCircles = () => {
+
+			circles = []
+
+			for (var i = 0; i < columns * rows; i++) {
+
+				let x = i % columns
+				let y = Math.floor(i / columns)
+				let r = circleSize / 2
+				let d = circleSize
+
+				let xrat = x / columns * fold
+				let yrat = y / rows * fold
+
+				circles.push({
+					t: xrat + yrat,
+					x: (x - 0.5) * d * spacing,
+					y: (y - 0.5) * d * spacing,
+					r: r,
+					d: d,
+					color: {
+						r: 0,
+						g: 0,
+						b: 0
+					}
+				})
+			}
+		}
+
+		let getDelta = () => {
+			let nowTime = new Date();
+			let delta = (nowTime - lastTime) / 1000
+			lastTime = nowTime
+			return delta
+		}
+
+		let init = () => {
+
+			createCircles()
+
+			window.requestAnimationFrame(gameLoop);
+			setInterval(rotateColors, 1000 * colorRotateTime)
+		}
+
+		let update = dt => {
+
+			circles.forEach(circle => {
+				circle.t += dt;
+
+				circle.color.b = Math.floor(Math.abs(Math.sin(circle.t / 2) * 255))
+				circle.color.g = 255 - Math.floor(Math.abs(Math.sin(circle.t / 2) * 255))
+			})
+		}
+
+		let draw = (dt, canvasId) => {
+			var ctx = document.getElementById(canvasId).getContext('2d');
+
+			ctx.globalCompositeOperation = 'destination-over';
+			ctx.clearRect(0, 0, 1000, 1000);
+
+			circles.forEach(circle => {
+
+				ctx.beginPath();
+				ctx.lineWidth = 2
+				ctx.arc(
+					circle.x + (Math.sin(circle.t) * circle.r),
+					circle.y + (Math.cos(circle.t) * circle.r),
+					dotSize / 2,
+					0, Math.PI * 2, true);
+				ctx.fillStyle = `rgba(${circle.color.r}, ${circle.color.g}, ${circle.color.b}, ${circleTransparency})`
+				ctx.fill()
+			});
+		}
+
+		let gameLoop = () => {
+
+			let dt = getDelta();
+
+			update(dt)
+			draw(dt, 'main-canvas')
+			draw(dt, 'main-canvas-back')
+
+			window.requestAnimationFrame(gameLoop);
+		}
+
+		init();
+	</script>
+</body>
+
+</html>
